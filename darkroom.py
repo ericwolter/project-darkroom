@@ -5,10 +5,14 @@ from __future__ import division
 from __future__ import print_function
 
 import argparse
+from datetime import datetime
 import hashlib
 import os.path
+import random
 import re
 import sys
+
+from tensorflow.python import debug as tf_debug
 
 import numpy as np
 import tensorflow as tf
@@ -172,7 +176,7 @@ def get_or_create_bottleneck(sess, file_name, category, bottleneck_dir,
     Args:
         sess: The current active TensorFlow Session.
         file_name: Full name to image.
-        category: Name string of which  set to pull images from - training, testing,
+        category: Name string of which set to pull images from - training, testing,
         or validation.
         bottleneck_dir: Folder string holding cached files of bottleneck values.
         jpeg_data_tensor: The tensor to feed loaded jpeg data into.
@@ -238,13 +242,147 @@ def cache_bottlenecks(sess, image_lists, bottleneck_dir, jpeg_data_tensor,
                 print(str(how_many_bottlenecks) + ' bottleneck files created.')
 
 def prepare_file_system():
-  """Setup the directory we'll write summaries to for TensorBoard"""
-  if tf.gfile.Exists(FLAGS.summaries_dir):
-    tf.gfile.DeleteRecursively(FLAGS.summaries_dir)
-  tf.gfile.MakeDirs(FLAGS.summaries_dir)
-  if FLAGS.intermediate_store_frequency > 0:
-    ensure_dir_exists(FLAGS.intermediate_output_graphs_dir)
-  return
+    """Setup the directory we'll write summaries to for TensorBoard"""
+    if tf.gfile.Exists(FLAGS.summaries_dir):
+        tf.gfile.DeleteRecursively(FLAGS.summaries_dir)
+    tf.gfile.MakeDirs(FLAGS.summaries_dir)
+    if FLAGS.intermediate_store_frequency > 0:
+        ensure_dir_exists(FLAGS.intermediate_output_graphs_dir)
+    return
+
+def variable_summaries(var):
+    """Attach a lot of summaries to a Tensor (for TensorBoard visualization)."""
+    with tf.name_scope('summaries'):
+        mean = tf.reduce_mean(var)
+        tf.summary.scalar('mean', mean)
+        with tf.name_scope('stddev'):
+            stddev = tf.sqrt(tf.reduce_mean(tf.square(var - mean)))
+        tf.summary.scalar('stddev', stddev)
+        tf.summary.scalar('max', tf.reduce_max(var))
+        tf.summary.scalar('min', tf.reduce_min(var))
+        tf.summary.histogram('histogram', var)
+
+def add_final_training_ops(final_tensor_name, bottleneck_tensor):
+    """Adds a new fully-connected layer for training.
+    We need to retrain the top layer to assign the aesthetics score, so this function
+    adds the right operations to the graph, along with some variables to hold the
+    weights, and then sets up all the gradients for the backward pass.
+    Args:
+        final_tensor_name: Name string for the new final node that produces results.
+        bottleneck_tensor: The output of the main CNN graph.
+    Returns:
+        The tensors for the training and cross entropy results, and tensors for the
+        bottleneck input and ground truth input.
+    """
+    with tf.name_scope('input'):
+        bottleneck_input = tf.placeholder_with_default(
+            bottleneck_tensor, shape=[None, BOTTLENECK_TENSOR_SIZE],
+            name='BottleneckInputPlaceholder')
+
+        ground_truth_input = tf.placeholder(tf.float32, [None, 1], name='GroundTruthInput')
+
+    # Organizing the following ops as `final_training_ops` so they're easier
+    # to see in TensorBoard
+    layer_name = 'final_training_ops'
+    with tf.name_scope(layer_name):
+        with tf.name_scope('weights'):
+            initial_value = tf.truncated_normal([BOTTLENECK_TENSOR_SIZE, 1],
+                                                 stddev=0.001)
+
+            layer_weights = tf.Variable(initial_value, name='final_weights')
+            variable_summaries(layer_weights)
+        with tf.name_scope('biases'):
+            layer_biases = tf.Variable(tf.zeros([1]), name='final_biases')
+            variable_summaries(layer_biases)
+
+        with tf.name_scope('Wx_plus_b'):
+            logits = tf.matmul(bottleneck_input, layer_weights) + layer_biases
+            tf.summary.histogram('pre_activations', logits)
+
+    final_tensor = tf.identity(logits, name=final_tensor_name)
+    tf.summary.histogram('activations', final_tensor)
+
+    with tf.name_scope('loss'):
+        loss = tf.reduce_mean(tf.squared_difference(logits, ground_truth_input))
+    tf.summary.scalar('loss', loss)
+
+    with tf.name_scope('train'):
+        optimizer = tf.train.GradientDescentOptimizer(FLAGS.learning_rate)
+        train_step = optimizer.minimize(loss)
+
+    return (train_step, loss, bottleneck_input, ground_truth_input, final_tensor)
+
+def add_evaluation_step(result_tensor, ground_truth_tensor):
+    """Inserts the operations we need to evaluate the accuracy of our results.
+    Args:
+        result_tensor: The new final node that produces results.
+        ground_truth_tensor: The node we feed ground truth data
+        into.
+    Returns:
+        evaluation step
+    """
+    with tf.name_scope('accuracy'):
+        with tf.name_scope('correct_prediction'):
+            difference = tf.abs(result_tensor - ground_truth_tensor)
+            correct_prediction = tf.less_equal(difference, 0.1)
+        with tf.name_scope('accuracy'):
+            evaluation_step = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+    tf.summary.scalar('accuracy', evaluation_step)
+    return evaluation_step
+
+def get_random_cached_bottlenecks(sess, image_lists, how_many, category,
+                                  bottleneck_dir, jpeg_data_tensor,
+                                  bottleneck_tensor):
+    """Retrieves bottleneck values for cached images.
+    If no distortions are being applied, this function can retrieve the cached
+    bottleneck values directly from disk for images. It picks a random set of
+    images from the specified category.
+    Args:
+        sess: Current TensorFlow Session.
+        image_lists: Dictionary of training images for each label.
+        how_many: If positive, a random sample of this size will be chosen.
+        If negative, all bottlenecks will be retrieved.
+        category: Name string of which set to pull from - training, testing, or
+        validation.
+        bottleneck_dir: Folder string holding cached files of bottleneck values.
+        jpeg_data_tensor: The layer to feed jpeg image data into.
+        bottleneck_tensor: The bottleneck output layer of the CNN graph.
+    Returns:
+        List of bottleneck arrays, their corresponding ground truths, and the
+        relevant filenames.
+    """
+    bottlenecks = []
+    ground_truths = []
+    filenames = []
+
+    category_list = image_lists[category]
+
+    if how_many >= 0:
+        for unused_i in range(how_many):
+            (file_name, quality) = random.choice(category_list)
+            bottleneck = get_or_create_bottleneck(sess, file_name,
+                                     category, bottleneck_dir,
+                                     jpeg_data_tensor, bottleneck_tensor)
+            ground_truth = np.zeros(1, dtype=np.float32)
+            ground_truth[0] = quality
+
+            bottlenecks.append(bottleneck)
+            ground_truths.append(ground_truth)
+            filenames.append(file_name)
+    else:
+        # Retrieve all bottlenecks.
+        for (file_name, quality) in category_list:
+            bottleneck = get_or_create_bottleneck(sess, file_name,
+                                     category, bottleneck_dir,
+                                     jpeg_data_tensor, bottleneck_tensor)
+            ground_truth = np.zeros(1, dtype=np.float32)
+            ground_truth[0] = quality
+
+            bottlenecks.append(bottleneck)
+            ground_truths.append(ground_truth)
+            filenames.append(file_name)
+
+    return bottlenecks, ground_truths, filenames
 
 def main(_):
     # Prepare necessary directories  that can be used during training
@@ -259,9 +397,56 @@ def main(_):
                                     FLAGS.validation_percentage)
 
     with tf.Session(graph=graph) as sess:
+        # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
+        # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
+
         cache_bottlenecks(sess, image_lists, FLAGS.bottleneck_dir,
                           jpeg_data_tensor, bottleneck_tensor)
         # file_writer = tf.summary.FileWriter('logs/', sess.graph)
+        (train_step, loss, bottleneck_input, ground_truth_input,
+         final_tensor) = add_final_training_ops(FLAGS.final_tensor_name,
+                                                bottleneck_tensor)
+
+        # Create the operations we need to evaluate the accuracy of our new layer.
+        evaluation_step = add_evaluation_step(
+            final_tensor, ground_truth_input)
+
+        # Merge all the summaries and write them out to the summaries_dir
+        merged = tf.summary.merge_all()
+        train_writer = tf.summary.FileWriter(FLAGS.summaries_dir + '/train',
+                                             sess.graph)
+
+        validation_writer = tf.summary.FileWriter(
+            FLAGS.summaries_dir + '/validation')
+
+        # Set up all our weights to their initial default values.
+        init = tf.global_variables_initializer()
+        sess.run(init)
+
+        # Run the training for as many cycles as requested on the command line.
+        for i in range(FLAGS.how_many_training_steps):
+            (train_bottlenecks,
+             train_ground_truth, _) = get_random_cached_bottlenecks(
+                sess, image_lists, FLAGS.train_batch_size, 'training',
+                FLAGS.bottleneck_dir, jpeg_data_tensor, bottleneck_tensor)
+
+            train_summary, _ = sess.run(
+                [merged, train_step],
+                feed_dict={bottleneck_input: train_bottlenecks,
+                           ground_truth_input: train_ground_truth})
+            train_writer.add_summary(train_summary, i)
+
+            # Every so often, print out how well the graph is training.
+            is_last_step = (i + 1 == FLAGS.how_many_training_steps)
+            if (i % FLAGS.eval_step_interval) == 0 or is_last_step:
+                train_accuracy, loss_value = sess.run(
+                    [evaluation_step, loss],
+                    feed_dict={bottleneck_input: train_bottlenecks,
+                               ground_truth_input: train_ground_truth})
+                print('%s: Step %d: Train accuracy = %.1f%%' % (datetime.now(), i,
+                                                train_accuracy * 100))
+                print('%s: Step %d: Loss = %f' % (datetime.now(), i,
+                                           loss_value))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -297,6 +482,18 @@ if __name__ == '__main__':
         help='Where to save summary logs for TensorBoard.'
     )
     parser.add_argument(
+        '--how_many_training_steps',
+        type=int,
+        default=4000,
+        help='How many training steps to run before ending.'
+    )
+    parser.add_argument(
+        '--learning_rate',
+        type=float,
+        default=0.001,
+        help='How large a learning rate to use when training.'
+    )
+    parser.add_argument(
         '--testing_percentage',
         type=int,
         default=10,
@@ -309,6 +506,18 @@ if __name__ == '__main__':
         help='What percentage of images to use as a validation set.'
     )
     parser.add_argument(
+        '--eval_step_interval',
+        type=int,
+        default=10,
+        help='How often to evaluate the training results.'
+    )
+    parser.add_argument(
+        '--train_batch_size',
+        type=int,
+        default=1000,
+        help='How many images to train on at a time.'
+    )
+    parser.add_argument(
         '--model_dir',
         type=str,
         default='model/',
@@ -317,8 +526,16 @@ if __name__ == '__main__':
     parser.add_argument(
         '--bottleneck_dir',
         type=str,
-        default='/tmp/bottleneck',
+        default='bottleneck/',
         help='Path to cache bottleneck layer values as files.'
+    )
+    parser.add_argument(
+        '--final_tensor_name',
+        type=str,
+        default='final_result',
+        help="""\
+        The name of the output classification layer in the retrained graph.\
+        """
     )
 
     FLAGS, unparsed = parser.parse_known_args()
