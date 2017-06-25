@@ -307,7 +307,7 @@ def add_final_training_ops(final_tensor_name, bottleneck_tensor):
     tf.summary.scalar('loss', loss)
 
     with tf.name_scope('train'):
-        optimizer = tf.train.GradientDescentOptimizer(FLAGS.learning_rate)
+        optimizer = tf.train.RMSPropOptimizer(FLAGS.learning_rate)
         train_step = optimizer.minimize(loss)
 
     return (train_step, loss, bottleneck_input, ground_truth_input, final_tensor)
@@ -324,7 +324,7 @@ def add_evaluation_step(result_tensor, ground_truth_tensor):
     with tf.name_scope('accuracy'):
         with tf.name_scope('correct_prediction'):
             difference = tf.abs(result_tensor - ground_truth_tensor)
-            correct_prediction = tf.less_equal(difference, 0.1)
+            correct_prediction = tf.less_equal(difference, 0.4)
         with tf.name_scope('accuracy'):
             evaluation_step = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
     tf.summary.scalar('accuracy', evaluation_step)
@@ -448,6 +448,21 @@ def main(_):
                 print('%s: Step %d: Loss = %f' % (datetime.now(), i,
                                            loss_value))
 
+                validation_bottlenecks, validation_ground_truth, _ = (
+                get_random_cached_bottlenecks(
+                    sess, image_lists, FLAGS.validation_batch_size, 'validation',
+                    FLAGS.bottleneck_dir, jpeg_data_tensor, bottleneck_tensor))
+                # Run a validation step and capture training summaries for TensorBoard
+                # with the `merged` op.
+                validation_summary, validation_accuracy = sess.run(
+                    [merged, evaluation_step],
+                    feed_dict={bottleneck_input: validation_bottlenecks,
+                               ground_truth_input: validation_ground_truth})
+                validation_writer.add_summary(validation_summary, i)
+                print('%s: Step %d: Validation accuracy = %.1f%% (N=%d)' %
+                      (datetime.now(), i, validation_accuracy * 100,
+                       len(validation_bottlenecks)))
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
@@ -484,13 +499,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--how_many_training_steps',
         type=int,
-        default=4000,
+        default=40000,
         help='How many training steps to run before ending.'
     )
     parser.add_argument(
         '--learning_rate',
         type=float,
-        default=0.001,
+        default=0.0001,
         help='How large a learning rate to use when training.'
     )
     parser.add_argument(
@@ -516,6 +531,19 @@ if __name__ == '__main__':
         type=int,
         default=1000,
         help='How many images to train on at a time.'
+    )
+    parser.add_argument(
+        '--validation_batch_size',
+        type=int,
+        default=1000,
+        help="""\
+        How many images to use in an evaluation batch. This validation set is
+        used much more often than the test set, and is an early indicator of how
+        accurate the model is during training.
+        A value of -1 causes the entire validation set to be used, which leads to
+        more stable results across training iterations, but may be slower on large
+        training sets.\
+        """
     )
     parser.add_argument(
         '--model_dir',
