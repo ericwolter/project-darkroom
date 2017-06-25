@@ -92,3 +92,4 @@ ENV/
 
 # my ignores
 dataset/
+bottleneck/
