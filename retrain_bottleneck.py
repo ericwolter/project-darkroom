@@ -51,7 +51,7 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage):
     testing_images = []
     validation_images = []
 
-    extensions = ['jpg', 'jpeg', 'JPG', 'JPEG']
+    extensions = ['jpg', 'jpeg']
 
     dataset_dirs = [os.path.join(image_dir, x) for x in gfile.ListDirectory(image_dir)]
     dataset_dirs = [x for x in dataset_dirs if gfile.IsDirectory(x)]
@@ -71,15 +71,22 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage):
 
                 sub_dirs = [x[0] for x in gfile.Walk(quality_dir)]
                 for sub_dir in sub_dirs:
+                    if os.path.basename(sub_dir) == "HighQuality":
+                        continue
+                    if os.path.basename(sub_dir) == "LowQuality":
+                        continue
                     print("Looking for images in '" + sub_dir + "'")
                     for extension in extensions:
                         file_glob = os.path.join(sub_dir, '*.' + extension)
-                        for file_name in gfile.Glob(file_glob):
+                        files = gfile.Glob(file_glob)
+                        for file_name in files:
+                            # print('file_name:', file_name)
                             hash_name = re.sub(r'_nohash_.*$', '', file_name)
                             hash_name_hashed = hashlib.sha1(compat.as_bytes(hash_name)).hexdigest()
                             percentage_hash = ((int(hash_name_hashed, 16) %
                                               (MAX_NUM_IMAGES + 1)) *
                                              (100.0 / MAX_NUM_IMAGES))
+                            # print('hash_name:', hash_name_hashed, percentage_hash)
                             image = (file_name, quality)
                             if percentage_hash < validation_percentage:
                                 validation_images.append(image)
@@ -87,6 +94,11 @@ def create_image_lists(image_dir, testing_percentage, validation_percentage):
                                 testing_images.append(image)
                             else:
                                 training_images.append(image)
+
+    print('training_images:', len(training_images))
+    print('validation_images:', len(validation_images))
+    print('testing_images:', len(testing_images))
+
     return {
         'training': training_images,
         'validation': validation_images,
@@ -199,9 +211,8 @@ def get_or_create_bottleneck(sess, file_name, category, bottleneck_dir,
         print('Invalid float found, recreating bottleneck')
         did_hit_error = True
     if did_hit_error:
-        create_bottleneck_file(bottleneck_path, image_lists, label_name, index,
-                               image_dir, category, sess, jpeg_data_tensor,
-                               bottleneck_tensor)
+        create_bottleneck_file(bottleneck_path, file_name, category, sess,
+                               jpeg_data_tensor, bottleneck_tensor)
         with open(bottleneck_path, 'r') as bottleneck_file:
             bottleneck_string = bottleneck_file.read()
         # Allow exceptions to propagate here, since they shouldn't happen after a
@@ -396,7 +407,7 @@ def main(_):
     image_lists = create_image_lists(FLAGS.image_dir, FLAGS.testing_percentage,
                                     FLAGS.validation_percentage)
 
-    with tf.Session(graph=graph) as sess:
+    with tf.Session(graph=graph, config=tf.ConfigProto(log_device_placement=True)) as sess:
         # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         # sess.add_tensor_filter("has_inf_or_nan", tf_debug.has_inf_or_nan)
 
