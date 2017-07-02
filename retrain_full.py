@@ -86,20 +86,19 @@ def main(_):
     callbacks = [
         tf.contrib.keras.callbacks.TensorBoard(
             log_dir=FLAGS.summaries_dir,
-            write_graph=True)]
+            histogram_freq=0,
+            write_graph=True)
+    ]
 
-    batch_size = 128
-    print('Training the model...')
+    batch_size = 16
+    print('Training the top layer...')
     model.fit_generator(
         generateCUHKPQSequence(training_set, batch_size),
-        len(sequence) // batch_size,
-        epochs=10,
-        verbose=2,
+        len(training_set) // batch_size,
+        epochs=64,
         callbacks=callbacks,
         validation_data=generateCUHKPQSequence(validation_set, batch_size),
-        validation_steps=len(validation_set) // batch_size,
-        workers=8,
-        pickle_safe=True)
+        validation_steps=len(validation_set) // batch_size)
 
 
 if __name__ == '__main__':
