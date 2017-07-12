@@ -184,7 +184,6 @@ def main(_):
         keras.callbacks.ModelCheckpoint(
             filepath=os.path.join(FLAGS.model_dir, model_filename),
             save_best_only=True,
-            save_weights_only=True,
             period=8,
         ),
         keras.callbacks.TensorBoard(
