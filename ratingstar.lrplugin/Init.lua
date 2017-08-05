@@ -1,0 +1,3 @@
+require "RatingStar"
+
+RatingStar:init()

@@ -1,0 +1,3 @@
+LOCALHOST_IP = "127.0.0.1"
+PORT = 31414
+CLIENT_ENDPOINT = "http://"..LOCALHOST_IP..":"..PORT.."/?path="
