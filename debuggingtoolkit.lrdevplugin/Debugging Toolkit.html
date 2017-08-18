@@ -1,0 +1,874 @@
+<html>
+
+<head>
+<meta name=Title content="Debugging Toolkit for Lightroom 3 SDK">
+<meta name=Keywords content="">
+<meta http-equiv=Content-Type content="text/html; charset=macintosh">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<title>Debugging Toolkit for Lightroom 3 SDK</title>
+<style>
+<!--
+ /* Font Definitions */
+@font-face
+	{font-family:Arial;
+	panose-1:2 11 6 4 2 2 2 2 2 4;}
+@font-face
+	{font-family:"Courier New";
+	panose-1:2 7 3 9 2 2 5 2 4 4;}
+@font-face
+	{font-family:Wingdings;
+	panose-1:5 0 0 0 0 0 0 0 0 0;}
+@font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"MS Mincho";
+	panose-1:2 2 6 9 4 2 5 8 3 4;}
+ /* Style Definitions */
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+h1
+	{margin-top:24.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:16.0pt;
+	font-family:Arial;}
+h2
+	{margin-top:14.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:14.0pt;
+	font-family:Arial;
+	font-weight:normal;}
+a:link, span.MsoHyperlink
+	{color:blue;
+	text-decoration:underline;}
+a:visited, span.MsoHyperlinkFollowed
+	{color:purple;
+	text-decoration:underline;}
+p.MsoDocumentMap, li.MsoDocumentMap, div.MsoDocumentMap
+	{margin:0in;
+	margin-bottom:.0001pt;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+p.MsoListParagraph, li.MsoListParagraph, div.MsoListParagraph
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:.5in;
+	margin-bottom:.0001pt;
+	line-height:115%;
+	font-size:12.0pt;
+	font-family:"Times New Roman";}
+span.Code
+	{font-family:"Courier New";}
+span.Heading1Char
+	{font-family:Arial;
+	font-weight:bold;}
+span.Heading2Char
+	{font-family:Arial;}
+span.DocumentMapChar
+	{font-family:"Times New Roman";}
+.MsoChpDefault
+	{font-family:Calibri;}
+.MsoPapDefault
+	{line-height:115%;}
+@page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+ /* List Definitions */
+ol
+	{margin-bottom:0in;}
+ul
+	{margin-bottom:0in;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US link=blue vlink=purple>
+
+<div class=WordSection1>
+
+<h1>A Debugging Toolkit for Lightroom 5–6 SDK</h1>
+
+<p class=MsoNormal><span style='font-size:10.0pt;line-height:115%'>Version 1.2</span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;line-height:115%'>&nbsp;</span></p>
+
+<p class=MsoNormal><span style='font-size:10.0pt;line-height:115%'>Copyright 2010-2017,
+John R. Ellis. You may use this toolkit for any purpose, as long as you include
+this notice in any versions derived in whole or part from these files.</span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>This Debugging Toolkit consists of:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><a
+href="#_Using_strict.lua"><span style='font-size:11.0pt;line-height:115%;
+font-family:"Courier New"'>strict.lua</span></a>: The standard script from the
+Lua distribution that detects undeclared global variables (usually typos).</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><a
+href="#_Using_Require.lua"><span style='font-size:11.0pt;line-height:115%;
+font-family:"Courier New"'>Require.lua</span></a>: A replacement for the
+standard <span class=Code><span style='font-size:11.0pt;line-height:115%'>require</span></span>
+that provides the ability to reload all files and to define a search path for
+loading <span class=Code><span style='font-size:11.0pt;line-height:115%'>.lua</span></span>
+files from shared directories.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><a
+href="#_Using_the_Debug"><span style='font-size:11.0pt;line-height:115%;
+font-family:"Courier New"'>debuggingtoolkit.lrdevplugin</span></a>: Provides
+quick, easy loading and reloading of scripts (whether or not they're part of a
+plugin) and executing them with the debugger.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>-<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </span><a
+href="#_Using_the_Debug.lua"><span style='font-size:11.0pt;line-height:115%;
+font-family:"Courier New"'>Debug.lua</span></a>: A standalone debugging module
+that provides an interactive debugger with stack traces, breakpoints, stepping,
+and evaluation of expressions; a &quot;pretty printer&quot; that nicely formats
+any Lua value (including nested and circular tables); some logging tools; and a
+rudimentary elapsed-time profiler for functions.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>You should expect to take about an hour to prepare your
+plugin for debugging and get up to speed on how to use the debugger. But this
+investment will quickly pay off—trying to debug plugins with print statements
+is an exercise in total frustration, given how mysterious Lua errors can be and
+Lightroom's often silent treatment of errors.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><a href="#_Getting_Started">Getting Started</a></p>
+
+<p class=MsoNormal><a href="#_Using_strict.lua">Using strict.lua</a></p>
+
+<p class=MsoNormal><a href="#_Using_the_Debug">Using the Debug Script Plugin</a></p>
+
+<p class=MsoNormal><a href="#_Using_Require.lua">Using Require.lua</a></p>
+
+<p class=MsoNormal><a href="#_Using_the_Debug.lua">Using the Debug.lua Debugger</a><span
+class=MsoHyperlink> </span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_Preparing_Your_Code">Preparing
+Your Code</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_Examining_the_Call">Examining
+the Call Stack</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a
+href="#_Evaluating_Expressions_and">Evaluating Expressions and Statements</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_Resuming_Execution">Resuming
+Execution</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_Setting_Breakpoints">Setting
+Breakpoints</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_The_Log">The Log</a></p>
+
+<p class=MsoNormal style='margin-left:.5in'><a href="#_Setting_the_Source">Setting
+the Source Path</a></p>
+
+<p class=MsoNormal><a href="#_Other_Debug_facilities">Other Debug facilities</a></p>
+
+<h1><a name="_Ref276469957"><a name="_Getting_Started"></a><a
+name="_Getting_Started_1"></a>Getting Started</a></h1>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'><a
+name="_Debugging_Menu_Plugins"></a>1.<span style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp;
+</span>Unzip the toolkit and place <span class=Code><span style='font-size:
+11.0pt;line-height:115%'>debuggingtoolkit.lrdevplugin </span></span>&nbsp;in
+your plugins folder.</p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Use the
+Lightroom Plug-in Manager to add <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>debuggingtoolkit.lrdevplugin</span></span> as a plugin.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Copy <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>Require.lua</span></span>
+from the <span class=Code><span style='font-size:11.0pt;line-height:115%'>debuggingtoolkit.lrdevplugin</span></span>
+&nbsp;directory to the directory of the plugin you want to debug.&nbsp; </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>4.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Place
+these lines at the top of each of your plugin's .lua files, including service
+definition scripts but not <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>Info.lua</span></span> or scripts defining tagsets and
+metadata:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local Require = require &quot;Require&quot;.path
+(&quot;../debuggingtoolkit.lrdevplugin&quot;).reload()</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local Debug = require &quot;Debug&quot;</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>require &quot;strict&quot;</span></span></p>
+
+<p class=MsoNormal style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.25in'>When your plugin executes from a
+directory ending in <span class=Code><span style='font-size:11.0pt;line-height:
+115%'>.lrdevplugin</span></span>, the debugger will be enabled; when it
+executes from any other directory (e.g. a release directory ending in <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>.lrplugin</span></span>)
+it will be disabled and have no impact on execution.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>5.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Wrap <i>all</i>
+functions passed to the SDK API and your main <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>showDialog</span></span> function with
+<span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.showErrors</span></span>.
+For example:</p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>viewFactory:edit_field {validate =
+Debug.showErrors (myValidate)}</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>LrTask.startAsyncTask
+(Debug.showErrors (function () </span></span>...<span class=Code><span
+style='font-size:11.0pt;line-height:115%'>))</span></span></p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>This will cause any errors
+within the functions to be trapped and invoke the debugger. Failing to do this
+will often cause the errors to be silently ignored by Lightroom, with no
+indication anything has gone wrong. Be sure to wrap callbacks passed to LrView
+controls, main functions of tasks, functions return by export and
+publish-service definition scriptions, and any other functions passed to the
+SDK API.</p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>6.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Wrap the
+main function of your <b>File</b> or <b>Library</b> menu plugin (often called <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>showDialog</span></span>)
+with <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.showErrors</span></span>.&nbsp;
+For example:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.callWithContext
+(&quot;showDialog&quot;, </span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; Debug.showErrors
+(function (context)</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+showDialog (context)</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+end))</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>7.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Replace
+uses of the Lua <span class=Code><span style='font-size:11.0pt;line-height:
+115%'>pcall</span></span> and <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>LrTasks.pcall</span></span> with <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.pcall</span></span>. Replace
+uses of <span class=Code><span style='font-size:11.0pt;line-height:115%'>LrFunctionContext.callWithContext</span></span>
+with <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.callWithContext</span></span>.
+This allows the debugger to trace the call stack across calls to these functions
+and enables breaks and stepping within the calls.</p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>8.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Place a
+call to <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pauseIfAsked()</span></span>
+as the first line of the <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>showDialog</span></span> function (for menu plugins) or the <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>startDialog</span></span>
+function (for export and publish-service plugins).</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>9.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Add the
+dummy file <span class=Code><span style='font-size:11.0pt;line-height:115%'>_debug.txt</span></span>
+to your plugin directory (you can copy it from <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>debuggingtoolkit.lrdevplugin</span></span>
+or make an empty file with a text editor)</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>10.<span
+style='font:7.0pt "Times New Roman"'>&nbsp; </span>Run your plugin. The
+debugger will open a window when it reaches the call to <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.pauseIfAsked()</span></span>,
+letting you set breakpoints before resuming execution.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>11.<span
+style='font:7.0pt "Times New Roman"'>&nbsp; </span>When you're done debugging,
+rename <span class=Code><span style='font-size:11.0pt;line-height:115%'>_debug.txt</span></span>
+to <span class=Code><span style='font-size:11.0pt;line-height:115%'>__debug.txt</span></span>
+so the debugger won't be invoked (unless the plugin encounters an error).
+Whenever you want the debugger to be invoked at plugin startup to set
+breakpoints, rename the file back.</p>
+
+<h1><a name="_Ref276469998"><a name="_Debugging_Export-_and"></a><a
+name="_Using_strict.lua"></a>Using </a><span class=Code><span style='line-height:
+115%'>strict.lua</span></span></h1>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Perhaps the most common Lua programming mistake is to
+mistype the name of variable—Lua will silently assume the mistyped name is a
+global variable.&nbsp; If you include the following at the top of each file:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>require &quot;strict.lua&quot;</span></span></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoNormal>any attempt to access a global variable that hasn't been
+&quot;declared&quot; will raise an error.&nbsp; You &quot;declare&quot; a
+global variable simply by assigning it a value (or defining it as a function)
+at the top level of a file.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Of everything in this toolkit, <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>strict.lua</span></span> has the
+biggest bang for the buck. Use it.</p>
+
+<h1><a name="_Ref276470003"><a name="_Using_the_Debug"></a>Using the Debug
+Script Command</a></h1>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>The Debug Script plugin provides quick, easy loading and
+reloading of scripts (whether or not they're part of a plugin) and executing
+them with the debugger. You can use Debug Script to run code without using the
+Plug-in Manager or creating a separate plugin directory and <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Info.lua</span></span>. </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>To use the Debug Script command:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span><b>File
+&gt; Plug-in Extras &gt; Debug Script</b>.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Browse to
+the <span class=Code><span style='font-size:11.0pt;line-height:115%'>.lua</span></span>
+file you want to run. </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>3.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Each time
+you click <b>Run</b>, Debug Script will reload the file <i>and </i>any files
+loaded by nested <span class=Code><span style='font-size:11.0pt;line-height:
+115%'>require</span></span>’s, executing the files in a new global
+environment.&nbsp; If an error occurs, the source file will be displayed in the
+configured text editor at the appropriate line.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Click <b>Debug options</b> to configure the text editor you
+want to use with Debug Script.&nbsp; On Windows, by default it will use TextPad
+if it's installed, Notepad otherwise.&nbsp; On Mac, by default it will use
+TextEdit. (Neither Notepad nor TextEdit know how to display a source file at a particular
+line number.)</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>The <b>Show new globals </b>option shows global variables
+that were defined as a result of loading the file.&nbsp; If your programming
+style avoids global variables, this helps you enforce that convention.&nbsp; </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>The <b>Reload all required scripts</b> option forces the
+reloading of all nested <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>require</span></span>’d files.&nbsp; The only reason to
+uncheck this is to test out persistent state that may be maintained by some of
+the modules loaded by the main file.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>The <b>Clear LrPrefs.prefsForPlugin</b> option deletes any
+preferences before executing the script.</p>
+
+<h1><a name="_Ref276470007"><a name="_Using_Require.lua"></a>Using </a><span
+class=Code><span style='line-height:115%'>Require.lua</span></span></h1>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><span class=Code><span style='font-size:11.0pt;line-height:
+115%'>Require.lua</span></span> provides a compatible replacement for the
+standard <span class=Code><span style='font-size:11.0pt;line-height:115%'>require</span></span>
+that provides the ability to for loading shared files from common directories
+and to automatically reload all files each time your plugin executes during
+development (but not when released).</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>First, place a copy of <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Require.lua</span></span> in your
+plugin directory.&nbsp; To load files from a shared directory <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>common</span></span> that's a sibling
+of your plugin directory, put the following at the top of your plugin's main
+file:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local Require = require &quot;Require&quot;.path
+(&quot;../common&quot;)</span></span></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoNormal>Now <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>require</span></span> will look in the <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>common</span></span> directory for
+any files that aren't found in the plugin directory. You can provide more than
+one directory in the call to <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>path</span></span>.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>To deploy your plugin to customers, you could continue to
+use the same directory structure.&nbsp; However, I recommend compiling all the
+plugin-specific and common files into a single release directory that gets
+shipped to your customers.&nbsp; That simplifies the installation for them by
+not having to create the <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>common</span></span> directory.&nbsp;&nbsp; And if you have
+two plugins sharing a common file, each gets its own copy (and version) of the
+file, letting a customer upgrade one plugin without upgrading the other.&nbsp;
+(Since each plugin executes in its own environment, each will compile and load
+its own copy of a shared file, regardless of whether it is loaded from a common
+directory.)</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>To force reloading of <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>require</span></span>’d files each
+time you run the plugin without invoking the Plug-in Manager, use the <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>.reload()</span></span>
+option:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local Require = require &quot;Require&quot;.path
+(&quot;../common&quot;).reload()</span></span></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoNormal>Whenever the main file is executed from a directory ending
+in <span class=Code><span style='font-size:11.0pt;line-height:115%'>.lrdevplugin</span></span>,
+any subsequent nested <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>require</span></span>’s will be reloaded, regardless if they
+had been previously loaded.&nbsp;&nbsp;&nbsp; The <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>.reload()</span></span> option has no
+effect when executed from a directory ending in <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>.lrplugin</span></span> (a release
+directory) – your released plugin will load files just once, when it is first
+invoked.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>For export and publish-service plugins, you'll have to do a
+little extra in the service-definition script in addition to using the <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>.reload()</span></span>
+option. Where formerly it might have contained:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local ExportDialogSections = require
+&quot;ExportDialogSections&quot;</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>return {</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; …</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; startDialog =
+ExportDialogSections.startDialog</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>change it to be:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>local ExportDialogSections = require
+&quot;ExportDialogSections&quot;</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>return {</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; …</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp; startDialog =
+Debug.showErrors (function (...)</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+require &quot;ExportDialogSections&quot;.startDialog (...)</span></span></p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+end),</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>This will force <span class=Code><span style='font-size:
+11.0pt;line-height:115%'>ExportDialogSections</span></span> to be reloaded each
+time the export or publish is executed (but not when the plugin is deployed in
+a <span class=Code><span style='font-size:11.0pt;line-height:115%'>.lrplugin</span></span>
+folder).</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Unfortunately, you can't use the Plug-in Manager's option <b>Reload
+plug-in on each export</b>—it will trigger a Lightroom bug, and you'll see the
+error &quot;attempt to yield across metamethod/C-call boundary&quot; in the
+Plug-in Manager.&nbsp; <a name="_Ref276470012"></a></p>
+
+<h1><a name="_Using_the_Debug.lua"></a>Using the <span class=Code><span
+style='line-height:115%'>Debug.lua</span></span><span class=Code><span
+style='font-size:14.0pt;line-height:115%;font-weight:normal'> </span></span>Debugger</h1>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><span class=Code><span style='font-size:11.0pt;line-height:
+115%'>Debug.lua</span></span> provides a simple interactive debugger with error
+trapping, breakpoints, stepping, stack traces, and evaluation of variable and expressions.&nbsp;
+</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Make sure you've prepared your code as described in <a
+href="#_Getting_Started_1">Getting Started</a>.</p>
+
+<p class=MsoNormal><a name="_Preparing_Your_Code"></a><a
+name="_Preparing_Your_Code_1"></a>&nbsp;</p>
+
+<p class=MsoNormal>Once you’ve prepared your code, the debugger window will
+appear whenever a runtime error occurs, when <span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.pauseIfAsked</span></span>, <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pause,</span></span>
+or <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pauseIf</span></span>
+is called, or the plugin hits a breakpoint.</p>
+
+<h2><a name="_Ref276470053"><a name="_Examining_the_Call"></a>Examining the
+Call Stack</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>The scrollable call stack at the top of the debugger window
+shows all the Lua calls on the call stack. Clicking on a call will open the
+corresponding source file in the configured text editor. It will also show all
+the in-scope variables in the scrollable pane below.&nbsp; Clicking on a
+variable will pop up a scrollable window showing the variable's value, pretty-printed
+and unelided.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Note that by the time the debugger traps an error, the call
+stack has been truncated back to the point where the error is trapped
+(typically a call to <span class=Code><span style='font-size:11.0pt;line-height:
+115%'>Debug.showErrors</span></span>). Though Lua provides a way of trapping
+the error at the point where it occurs (xpcall), that is not available in
+Lightroom (at least as far as I can determine).</p>
+
+<h2><a name="_Ref276470058"><a name="_Evaluating_Expressions_and"></a>Evaluating
+Expressions and Statements</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>You can enter an expression and click <b>Eval</b>, and the
+result will be pretty-printed in the results pane.&nbsp;&nbsp; The expression
+will be evaluated in the context of the currently selected call on the stack,
+with access to all the variables shown for the call. The expression is always
+evaluated in an asynchronous task (essential for some API calls). </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>To see the entire result value in a scrollable pop-up
+window, click <b>View Result</b>. </p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Click the <span style='font-family:"MS Mincho"'>_ and _</span>
+buttons to call up previously executed expressions.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Checking <b>Evaluate automatically</b> will evaluate the
+expression each time the debugger window opens. (Separate multiple expressions
+with commas.)</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Note that you can always re-import a Lightroom namespace to
+access it in an expression, e.g.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>import &quot;LrApplication&quot;.activeCatalog
+():getPath ()</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>To execute a statement rather than evaluate an expression,
+prefix it with a period:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>.x [i] = myFunc(j)</span></span></p>
+
+<h2><a name="_Ref276470062"><a name="_Resuming_Execution"></a>Resuming Execution
+</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><b>Go</b> resumes execution.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><b>Step</b> resumes execution until the next Lua source
+line.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><b>Step Over </b>resumes execution until the next Lua source
+line at the same call-stack level; useful for stepping over function calls.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><b>Step Up</b> resumes execution until the next Lua source
+line at a earlier call-stack level, typically the caller of this function.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><b>Stop</b> terminates execution by raising a distinguished
+error.</p>
+
+<h2><a name="_Ref276470068"><a name="_Setting_Breakpoints"></a>Setting Breakpoints</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>There are two ways of setting breakpoints:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>1.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Click <b>Breaks</b>
+and enter one or more source files and line numbers.&nbsp; Optionally enter a
+conditional expression that will be evaluated in the context of the
+breakpoint—if it evaluates to true, the break will be taken. Breaks are
+remembered in the plugin preferences.</p>
+
+<p class=MsoListParagraph style='margin-left:.25in'>&nbsp;</p>
+
+<p class=MsoListParagraph style='margin-left:.25in;text-indent:-.25in'>2.<span
+style='font:7.0pt "Times New Roman"'>&nbsp;&nbsp;&nbsp;&nbsp; </span>Insert a
+call to <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pause()</span></span>
+or <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pauseIf
+(expr)</span></span> in your code. The latter opens the debugger window only if
+expr evaluates to true.</p>
+
+<h2><a name="_Ref276470080"><a name="_The_Log"></a><a name="_Setting_the_Source"></a>Setting
+the Source Path</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>Debug looks for source files in the plugin's directory <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>(_PLUGIN.path</span></span>).
+If you use <a href="#_Using_Require.lua"><span style='font-size:11.0pt;
+line-height:115%;font-family:"Courier New"'>Require.path</span></a> to load
+files from other directories, Debug will use the same search path to locate the
+sources.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>If you have your own module-loading scheme, you can
+explicitly give Debug a search path:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.path (&quot;../common&quot;,
+&quot;../base&quot;)</span></span></p>
+
+<h2><a name="_Ref276470083"><a name="_Other_Debug_facilities"></a>Other Debug
+facilities</a></h2>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal>See <span class=Code><span style='font-size:11.0pt;
+line-height:115%'>Debug.lua</span></span> for complete documentation.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><span class=Code><i><span style='font-size:11.0pt;
+line-height:115%'>Debug.pp</span></i></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.pp</span></span> is a pretty
+printer that formats any Lua value as a string suitable for logging or
+display.&nbsp; <span class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pp</span></span>
+shows the contents of tables properly indented, showing each nested table at
+most once, even circular tables.&nbsp;&nbsp; The debugger uses <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>Debug.pp</span></span>
+for displaying values.</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal><span class=Code><i><span style='font-size:11.0pt;
+line-height:115%'>Debug.log</span></i></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.log</span></span> is an <span
+class=Code><span style='font-size:11.0pt;line-height:115%'>LrLogger</span></span>
+that writes to <span class=Code><i><span style='font-size:11.0pt;line-height:
+115%'>plugin-directory</span></i></span><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>/debug.log</span></span>. It only creates
+the file if the plugin actually outputs something.&nbsp; To log one or more
+values on a single line, converted to strings and separated by spaces:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:1.0in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.logn (&quot;n&quot;, n, &quot;i
+&gt; n&quot;, i &gt; n)</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='text-indent:.5in'>To log a formatted string:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:1.0in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.log:tracef (&quot;%d items are
+stale&quot;, n)</span></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'>To log one or more values
+pretty-printed with <span class=Code><span style='font-size:11.0pt;line-height:
+115%'>Debug.pp</span></span>:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:1.0in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.lognpp (table1, array1)</span></span></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoNormal><span class=Code><i><span style='font-size:11.0pt;
+line-height:115%'>Debug.profileFunc</span></i></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:.5in'>You can measure the total number of
+calls and elapsed time per call of a function using the Debug profiler:</p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<p class=MsoNormal style='margin-left:1.0in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>myFunc = Debug.profileFunc (myFunc,
+&quot;myFunc&quot;)</span></span></p>
+
+<p class=MsoNormal style='margin-left:1.0in'><i>...execute code that calls
+myFunc one or more times...</i></p>
+
+<p class=MsoNormal style='margin-left:1.0in'><span class=Code><span
+style='font-size:11.0pt;line-height:115%'>Debug.logn (&quot;\n&quot;,
+Debug.profileResults())</span></span></p>
+
+<p class=MsoNormal>&nbsp;&nbsp;&nbsp; </p>
+
+<p class=MsoNormal style='margin-left:.5in'>The profiler properly handles
+recursive calls to functions.</p>
+
+</div>
+
+</body>
+
+</html>

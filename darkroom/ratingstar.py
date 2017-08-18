@@ -19,8 +19,6 @@ import tensorflow.contrib.keras as keras
 SCRIPT_DIRECTORY=os.path.dirname(os.path.realpath(__file__))
 INPUT_TENSOR_NAME = 'input_1:0'
 OUTPUT_TENSOR_NAME = 'output_node0:0'
-IMAGE_PATH = 'images/305163.jpg'
-PREDICTION = 4.84523809523809
 
 GRAPH = None
 INPUT_TENSOR = None
@@ -122,16 +120,22 @@ def score_CUHKPQ(sess, input_tensor, output_tensor):
 class prestigeHTTPServer_RequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         global SESSION, GRAPH, INPUT_TENSOR, OUTPUT_TENSOR
-        self.send_response(200)
-        self.end_headers()
-
         o = urllib.parse.urlparse(self.path)
         d = urllib.parse.parse_qs(o.query)
         path = d['path'][0]
 
         score = getScore(SESSION, path, INPUT_TENSOR, OUTPUT_TENSOR)[0]
+
+        self.send_response(200)
+        self.end_headers()
         self.wfile.write(bytes(str(score), "utf8"))
+        self.wfile.flush()
         return
+
+    def address_string(self):
+        host, port = self.client_address[:2]
+        #return socket.getfqdn(host)
+        return host
 
 
 def main(_):
@@ -160,12 +164,6 @@ def main(_):
 
     print ('Started httpd on port', PORT_NUMBER)
     httpd.serve_forever()
-
-    # with tf.Session(graph=graph) as sess:
-    #     # score_CUHKPQ(sess, input_tensor, output_tensor)
-    #     score_directory(sess, '/Users/eric/Downloads/Nikon',
-    #                     input_tensor, output_tensor)
-    #     # print(getScore(sess, IMAGE_PATH, input_tensor, output_tensor))
 
 
 if __name__ == '__main__':

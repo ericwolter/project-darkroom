@@ -28,7 +28,7 @@ class Prestige:
 
         print('Adding top model...')
         self.top_model = keras.models.Sequential()
-        self.top_model.add(keras.layers.Dense(1 , input_shape=self.base_model.output_shape[1:]))
+        self.top_model.add(keras.layers.Dense(1, input_shape=self.base_model.output_shape[1:]))
 
         print('Combining base and top model...')
         self.model = keras.models.Model(self.base_model.input, self.top_model(self.base_model.output))
@@ -68,3 +68,18 @@ class Prestige:
         self.model = None
         self.base_model = None
         self.top_model = None
+
+class PrestigeClass(Prestige):
+    def create_model(self):
+        print('Creating InceptionV3 model...')
+        self.base_model = keras.applications.InceptionV3(weights='imagenet',
+                                                    include_top=False,
+                                                    pooling='avg')
+        self.base_model.trainable = False
+
+        print('Adding top model...')
+        self.top_model = keras.models.Sequential()
+        self.top_model.add(keras.layers.Dense(2, activation='softmax', name='predictions', input_shape=self.base_model.output_shape[1:]))
+
+        print('Combining base and top model...')
+        self.model = keras.models.Model(self.base_model.input, self.top_model(self.base_model.output))

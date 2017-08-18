@@ -17,9 +17,9 @@ from tensorflow.python.platform import gfile
 import random
 
 import datasets.utils
-from datasets import ava
+from datasets import flickr
 import generators
-from models import Prestige
+from models import PrestigeClass
 
 # Config to turn on JIT compilation
 config = tf.ConfigProto()
@@ -30,8 +30,8 @@ keras.backend.set_session(sess)
 
 class FLAGS:
     summaries_dir = '/tmp/retrain_logs'
-    model_dir = 'D:\deeplearning\model\prestige'
-    bottleneck_dir = 'D:\\deeplearning\\bottleneck\\prestige'
+    model_dir = 'D:\\deeplearning\\model\\prestige'
+    bottleneck_dir = 'D:\\deeplearning\\bottleneck\\prestige_flickr'
 
 
 def prepare_file_system():
@@ -43,31 +43,83 @@ def prepare_file_system():
     tf.gfile.MakeDirs(FLAGS.bottleneck_dir)
 
 
-def save_bottleneck(model, generator, input_set, batch_size, prefix, weighted):
-    bottleneck_iterations = len(input_set) // batch_size * 2
+def batch(iterable, n=1):
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx:min(ndx + n, l)]
+
+def save_bottleneck(model, input_set, batch_size, prefix):
+    bottleneck_iterations = len(input_set) // batch_size
 
     progbar = keras.utils.Progbar(bottleneck_iterations)
-    for batch_index in range(bottleneck_iterations):
-        samples = next(generator)
-        inputs = samples[0]
-        scores = samples[1]
-        if weighted:
-            weights = samples[2]
-        bottlenecks = model.predict(inputs)
+    batch_index = 0
+    for samples in batch(input_set, batch_size):
+        batch_x = []
+        batch_y = []
+        for (image_filename, score) in samples:
+            image = generators._load_image(image_filename, False)
+            processed = generators._process_image(image)
+
+            batch_x.append(processed)
+            batch_y.append(np.array([score]))
+
+        bottlenecks = model.predict(np.stack(batch_x))
+        scores = np.stack(batch_y)
 
         for (input_index, bottleneck) in enumerate(bottlenecks):
             score = scores[input_index]
-            if weighted:
-                weight = weights[input_index]
             filename = prefix + str(batch_index * batch_size + input_index) + '.npz'
             with open(os.path.join(FLAGS.bottleneck_dir, filename), 'wb') as f:
-                if weighted:
-                    np.savez_compressed(f, bottleneck=bottleneck, score=score, weight=weight)
-                else:
-                    np.savez_compressed(f, bottleneck=bottleneck, score=score)
+                np.savez_compressed(f, bottleneck=bottleneck, score=score)
 
-        progbar.update(batch_index + 1)
+        batch_index = batch_index + 1
+        progbar.update(batch_index)
     progbar.update(bottleneck_iterations, force=True)
+
+    # for batch_index in range(bottleneck_iterations):
+    #     samples = next(generator)
+    #     inputs = samples[0]
+    #     scores = samples[1]
+    #     if weighted:
+    #         weights = samples[2]
+    #     bottlenecks = model.predict(inputs)
+    #
+    #     for (input_index, bottleneck) in enumerate(bottlenecks):
+    #         score = scores[input_index]
+    #         if weighted:
+    #             weight = weights[input_index]
+    #         filename = prefix + str(batch_index * batch_size + input_index) + '.npz'
+    #         with open(os.path.join(FLAGS.bottleneck_dir, filename), 'wb') as f:
+    #             if weighted:
+    #                 np.savez_compressed(f, bottleneck=bottleneck, score=score, weight=weight)
+    #             else:
+    #                 np.savez_compressed(f, bottleneck=bottleneck, score=score)
+
+# def save_bottleneck(model, generator, input_set, batch_size, prefix, weighted):
+#     bottleneck_iterations = len(input_set) // batch_size
+#
+#     progbar = keras.utils.Progbar(bottleneck_iterations)
+#     for batch_index in range(bottleneck_iterations):
+#         samples = next(generator)
+#         inputs = samples[0]
+#         scores = samples[1]
+#         if weighted:
+#             weights = samples[2]
+#         bottlenecks = model.predict(inputs)
+#
+#         for (input_index, bottleneck) in enumerate(bottlenecks):
+#             score = scores[input_index]
+#             if weighted:
+#                 weight = weights[input_index]
+#             filename = prefix + str(batch_index * batch_size + input_index) + '.npz'
+#             with open(os.path.join(FLAGS.bottleneck_dir, filename), 'wb') as f:
+#                 if weighted:
+#                     np.savez_compressed(f, bottleneck=bottleneck, score=score, weight=weight)
+#                 else:
+#                     np.savez_compressed(f, bottleneck=bottleneck, score=score)
+#
+#         progbar.update(batch_index + 1)
+#     progbar.update(bottleneck_iterations, force=True)
 
 
 def _bottleneck_generate_sequence(sequence, batch_size, weighted):
@@ -80,7 +132,11 @@ def _bottleneck_generate_sequence(sequence, batch_size, weighted):
         for filename in samples:
             loaded = np.load(os.path.join(FLAGS.bottleneck_dir, filename))
             batch_x.append(loaded['bottleneck'])
-            batch_y.append(loaded['score'])
+            if loaded['score']:
+                batch_y.append([1,0])
+            else:
+                batch_y.append([0,1])
+
             if weighted:
                 batch_w.append(loaded['weight'])
 
@@ -91,29 +147,27 @@ def _bottleneck_generate_sequence(sequence, batch_size, weighted):
 
 def main(_):
 
+    # print('Getting samples...')
+    # training_set, validation_set, test_set = flickr.get_sequences('D:\\deeplearning\\dataset\\FLICKR')
+
     print('Loading model...')
     # keras.backend.set_learning_phase(False)
     prepare_file_system()
-    prestige = Prestige()
+    prestige = PrestigeClass()
     prestige.create_model()
-    # prestige.load_top_weights('D:\\deeplearning\model\\prestige_final\\top_weights.hdf5')
+    prestige.load_top_weights('D:\\deeplearning\model\\prestige\\weights.314-0.60.hdf5')
     # prestige.convert_keras_to_tensorflow()
 
-    # print('Getting samples...')
-    # sequence = ava.get_sequence('D:\deeplearning\dataset\AVA', normalized=True)
-    # training_set, validation_set, test_set = datasets.utils.split_sequence(sequence)
-    # training_set = datasets.utils.weight_sequence(training_set, 90, 0, 1)
-
     # save_bottleneck(
-    #     base_model,
-    #     generators.generate_sequence(training_set, 32, weighted=True, augmented=True),
-    #     training_set, 32,
-    #     prefix='bottleneck_training_', weighted=True)
+    #     prestige.base_model,
+    #     training_set, 197,
+    #     prefix='bottleneck_training_')
     # save_bottleneck(
-    #     base_model,
-    #     generators.generate_sequence(validation_set, 32, weighted=False, augmented=False),
-    #     validation_set, 32,
-    #     prefix='bottleneck_validation_', weighted=False)
+    #     prestige.base_model,
+    #     validation_set, 179,
+    #     prefix='bottleneck_validation_')
+    #
+    # return
 
     training_set = []
     validation_set = []
@@ -127,9 +181,9 @@ def main(_):
                     validation_set.append(f)
 
     prestige.top_model.compile(optimizer=keras.optimizers.Nadam(),
-                      loss=keras.losses.mean_squared_error,
-                      metrics=[keras.metrics.mean_squared_error])
-    batch_size = 8
+                      loss='categorical_crossentropy',
+                      metrics=['accuracy'])
+    batch_size = 32
     iterations = len(training_set) // batch_size
     epochs = 1024
 
@@ -148,7 +202,7 @@ def main(_):
 
     print('Training...')
     prestige.top_model.fit_generator(
-        _bottleneck_generate_sequence(training_set, batch_size, weighted=True),
+        _bottleneck_generate_sequence(training_set, batch_size, weighted=False),
         iterations,
         epochs=epochs,
         callbacks=callbacks,
