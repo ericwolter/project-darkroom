@@ -10,28 +10,24 @@ import tensorflow.contrib.keras as keras
 output_directory = 'model/'
 output_graph_name = 'prestige_trained.pb'
 
+
 class Prestige:
-    # def load_model(model_path):
-    #     # workaround:
-    #     # https://github.com/fchollet/keras/issues/4044
-    #     with h5py.File(model_path, 'a') as f:
-    #         if 'optimizer_weights' in f.keys():
-    #             del f['optimizer_weights']
-    #
-    #     self.model = keras.models.load_model(model_path)
     def create_model(self):
         print('Creating InceptionV3 model...')
         self.base_model = keras.applications.InceptionV3(weights='imagenet',
-                                                    include_top=False,
-                                                    pooling='avg')
+                                                         include_top=False,
+                                                         pooling='avg')
         self.base_model.trainable = False
+        base_output_shape = self.base_model.output_shape[1:]
 
         print('Adding top model...')
         self.top_model = keras.models.Sequential()
-        self.top_model.add(keras.layers.Dense(1, input_shape=self.base_model.output_shape[1:]))
+        self.top_model.add(
+            keras.layers.Dense(1, input_shape=base_output_shape))
 
         print('Combining base and top model...')
-        self.model = keras.models.Model(self.base_model.input, self.top_model(self.base_model.output))
+        self.model = keras.models.Model(
+            self.base_model.input, self.top_model(self.base_model.output))
 
     def load_weights(self, model_weights_path):
         self.model.load_weights(model_weights_path)
@@ -69,17 +65,23 @@ class Prestige:
         self.base_model = None
         self.top_model = None
 
+
 class PrestigeClass(Prestige):
     def create_model(self):
         print('Creating InceptionV3 model...')
         self.base_model = keras.applications.InceptionV3(weights='imagenet',
-                                                    include_top=False,
-                                                    pooling='avg')
+                                                         include_top=False,
+                                                         pooling='avg')
         self.base_model.trainable = False
+        base_output_shape = self.base_model.output_shape[1:]
 
         print('Adding top model...')
         self.top_model = keras.models.Sequential()
-        self.top_model.add(keras.layers.Dense(2, activation='softmax', name='predictions', input_shape=self.base_model.output_shape[1:]))
+        self.top_model.add(keras.layers.Dense(2,
+                                              activation='softmax',
+                                              name='predictions',
+                                              input_shape=base_output_shape))
 
         print('Combining base and top model...')
-        self.model = keras.models.Model(self.base_model.input, self.top_model(self.base_model.output))
+        self.model = keras.models.Model(
+            self.base_model.input, self.top_model(self.base_model.output))

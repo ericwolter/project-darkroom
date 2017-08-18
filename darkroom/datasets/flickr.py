@@ -1,5 +1,8 @@
 import os.path
 
+import settings as s
+
+
 def _load_sequence(set_dir):
     sequence = []
     list_path = os.path.join(set_dir, 'list.txt')
@@ -15,9 +18,9 @@ def _load_sequence(set_dir):
 
     return sequence
 
-def get_sequences(image_dir):
+
+def get_sequences(image_dir=s.DATASET_FLICKR_DIRECTORY):
     print('Using FLICKR dataset...')
-    sequence = []
 
     training_set = _load_sequence(os.path.join(image_dir, 'train'))
     validation_set = _load_sequence(os.path.join(image_dir, 'test'))

@@ -1,5 +1,8 @@
 import os.path
 
+import settings as s
+
+
 class AVAImage:
     def __init__(self, index, imageID, ratings, semantics, challengeID, imagePath):
         self.index = index
@@ -23,7 +26,7 @@ class AVAImage:
             str(self.score)])
 
 
-def get_sequence(image_dir, normalized=True):
+def get_sequence(image_dir=s.DATASET_AVA_DIRECTORY, normalized=True):
     sequence = []
 
     with open(os.path.join(image_dir, 'AVA.txt')) as f:
