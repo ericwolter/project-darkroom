@@ -23,8 +23,8 @@ from tensorflow.contrib.keras.python.keras.applications.imagenet_utils import pr
 # config.graph_options.optimizer_options.global_jit_level = \
 #     tf.OptimizerOptions.ON_1
 
-sess = tf.Session(config=config)
-keras.backend.set_session(sess)
+# sess = tf.Session(config=config)
+# keras.backend.set_session(sess)
 
 
 def prepare_file_system():
