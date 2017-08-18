@@ -12,6 +12,14 @@ def split_sequence(sequence):
     training_set = []
     validation_set = []
     test_set = []
+
+    training_good = 0
+    training_bad = 0
+    validation_good = 0
+    validation_bad = 0
+    test_good = 0
+    test_bad = 0
+
     for (image_filename, score) in sequence:
         hash_name = os.path.basename(image_filename)
         hash_name_hashed = hashlib.sha1(compat.as_bytes(hash_name)).hexdigest()
@@ -21,14 +29,26 @@ def split_sequence(sequence):
 
         if percentage_hash < 10:
             test_set.append((image_filename, score))
+            if score:
+                test_good = test_good + 1
+            else:
+                test_bad = test_bad + 1
         elif percentage_hash < (10 + 10):
             validation_set.append((image_filename, score))
+            if score:
+                validation_good = validation_good + 1
+            else:
+                validation_bad = validation_bad + 1
         else:
             training_set.append((image_filename, score))
+            if score:
+                training_good = training_good + 1
+            else:
+                training_bad = training_bad + 1
 
-    print(len(training_set), 'training samples')
-    print(len(validation_set), 'validation samples')
-    print(len(test_set), 'test samples')
+    print(len(training_set), 'training samples', training_good, training_bad)
+    print(len(validation_set), 'validation samples', validation_good, validation_bad)
+    print(len(test_set), 'test samples', test_good, test_bad)
 
     return training_set, validation_set, test_set
 

@@ -7,6 +7,8 @@ import os.path
 import tensorflow as tf
 import tensorflow.contrib.keras as keras
 
+from models.squeezenet import SqueezeNet
+
 output_directory = 'model/'
 output_graph_name = 'prestige_trained.pb'
 
@@ -68,12 +70,12 @@ class Prestige:
 
 class PrestigeClass(Prestige):
     def create_model(self):
-        print('Creating InceptionV3 model...')
-        self.base_model = keras.applications.InceptionV3(weights='imagenet',
-                                                         include_top=False,
-                                                         pooling='avg')
+        print('Creating SqueezeNet model...')
+        self.base_model = SqueezeNet(include_top=False, pooling='avg')
+
         self.base_model.trainable = False
         base_output_shape = self.base_model.output_shape[1:]
+        print(base_output_shape)
 
         print('Adding top model...')
         self.top_model = keras.models.Sequential()

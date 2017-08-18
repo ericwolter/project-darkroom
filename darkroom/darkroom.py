@@ -14,12 +14,14 @@ import settings as s
 import datasets.utils
 from datasets import cuhkpq
 from generators import generate_sequence
-from models import PrestigeClass
+from models.prestige import PrestigeClass
+
+from tensorflow.contrib.keras.python.keras.applications.imagenet_utils import preprocess_input
 
 # Config to turn on JIT compilation
-config = tf.ConfigProto()
-config.graph_options.optimizer_options.global_jit_level = \
-    tf.OptimizerOptions.ON_1
+# config = tf.ConfigProto(intra_op_parallelism_threads=8)
+# config.graph_options.optimizer_options.global_jit_level = \
+#     tf.OptimizerOptions.ON_1
 
 sess = tf.Session(config=config)
 keras.backend.set_session(sess)
@@ -49,7 +51,7 @@ def main(_):
                            loss='categorical_crossentropy',
                            metrics=['accuracy'])
 
-    batch_size = 32
+    batch_size = 4
     iterations = len(training_set) // batch_size
     epochs = 1024
 
@@ -71,12 +73,14 @@ def main(_):
         training_set,
         batch_size,
         category=True,
-        weighted=False)
+        weighted=False,
+        preprocess=preprocess_input)
     validation_generator = generate_sequence(
         validation_set,
         batch_size,
         category=True,
-        weighted=False)
+        weighted=False,
+        preprocess=preprocess_input)
 
     prestige.model.fit_generator(
         training_generator,
