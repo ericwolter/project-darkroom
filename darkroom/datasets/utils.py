@@ -46,9 +46,12 @@ def split_sequence(sequence):
             else:
                 training_bad = training_bad + 1
 
-    print(len(training_set), 'training samples', training_good, training_bad)
-    print(len(validation_set), 'validation samples', validation_good, validation_bad)
-    print(len(test_set), 'test samples', test_good, test_bad)
+    print(len(training_set), 'training samples',
+          training_good, training_bad)
+    print(len(validation_set), 'validation samples',
+          validation_good, validation_bad)
+    print(len(test_set), 'test samples',
+          test_good, test_bad)
 
     return training_set, validation_set, test_set
 
