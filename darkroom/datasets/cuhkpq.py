@@ -15,15 +15,14 @@ def get_sequence(image_dir=s.DATASET_CUHKPQ_DIRECTORY, normalized=False):
                            if os.path.splitext(f)[1] == '.jpg']
         if "HighQuality" in pathname:
             score = 1
-            for image_filename in image_filenames:
-                good_sequence.append((os.path.join(pathname, image_filename),
-                                score))
+            score_sequence = good_sequence
         else:
             score = 0
-            for image_filename in image_filenames:
-                bad_sequence.append((os.path.join(pathname, image_filename),
-                                score))
-        score = 1 if "HighQuality" in pathname else 0
+            score_sequence = bad_sequence
+
+        for image_filename in image_filenames:
+            image_path = os.path.join(pathname, image_filename)
+            score_sequence.append((image_path, score))
 
     equal_size = min(len(good_sequence), len(bad_sequence))
     sequence = good_sequence[:equal_size] + bad_sequence[:equal_size]
